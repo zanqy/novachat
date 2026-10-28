@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.novachat.AppContainer
 import com.novachat.ui.chat.ChatScreen
+import com.novachat.ui.chat.SystemPromptScreen
 import com.novachat.ui.chatlist.ChatListScreen
 import com.novachat.ui.settings.SettingsScreen
 

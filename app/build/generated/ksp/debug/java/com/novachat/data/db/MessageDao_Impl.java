@@ -36,6 +36,10 @@ public final class MessageDao_Impl implements MessageDao {
 
   private final EntityInsertionAdapter<MessageEntity> __insertionAdapterOfMessageEntity;
 
+  private final SharedSQLiteStatement __preparedStmtOfDeleteById;
+
+  private final SharedSQLiteStatement __preparedStmtOfDeleteAfter;
+
   private final SharedSQLiteStatement __preparedStmtOfUpdateContent;
 
   private final SharedSQLiteStatement __preparedStmtOfFinalizeMessage;
@@ -83,6 +87,22 @@ public final class MessageDao_Impl implements MessageDao {
         final int _tmp = entity.getStoppedManually() ? 1 : 0;
         statement.bindLong(9, _tmp);
         statement.bindLong(10, entity.getCreatedAt());
+      }
+    };
+    this.__preparedStmtOfDeleteById = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM messages WHERE id = ?";
+        return _query;
+      }
+    };
+    this.__preparedStmtOfDeleteAfter = new SharedSQLiteStatement(__db) {
+      @Override
+      @NonNull
+      public String createQuery() {
+        final String _query = "DELETE FROM messages WHERE chatId = ? AND createdAt > ?";
+        return _query;
       }
     };
     this.__preparedStmtOfUpdateContent = new SharedSQLiteStatement(__db) {
@@ -134,6 +154,59 @@ public final class MessageDao_Impl implements MessageDao {
           return Unit.INSTANCE;
         } finally {
           __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteById(final String id, final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteById.acquire();
+        int _argIndex = 1;
+        _stmt.bindString(_argIndex, id);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteById.release(_stmt);
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object deleteAfter(final String chatId, final long timestamp,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        final SupportSQLiteStatement _stmt = __preparedStmtOfDeleteAfter.acquire();
+        int _argIndex = 1;
+        _stmt.bindString(_argIndex, chatId);
+        _argIndex = 2;
+        _stmt.bindLong(_argIndex, timestamp);
+        try {
+          __db.beginTransaction();
+          try {
+            _stmt.executeUpdateDelete();
+            __db.setTransactionSuccessful();
+            return Unit.INSTANCE;
+          } finally {
+            __db.endTransaction();
+          }
+        } finally {
+          __preparedStmtOfDeleteAfter.release(_stmt);
         }
       }
     }, $completion);
@@ -421,6 +494,83 @@ public final class MessageDao_Impl implements MessageDao {
         _statement.release();
       }
     });
+  }
+
+  @Override
+  public Object getOnce(final String chatId,
+      final Continuation<? super List<MessageEntity>> $completion) {
+    final String _sql = "SELECT * FROM messages WHERE chatId = ? ORDER BY createdAt ASC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    _statement.bindString(_argIndex, chatId);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<MessageEntity>>() {
+      @Override
+      @NonNull
+      public List<MessageEntity> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfChatId = CursorUtil.getColumnIndexOrThrow(_cursor, "chatId");
+          final int _cursorIndexOfRole = CursorUtil.getColumnIndexOrThrow(_cursor, "role");
+          final int _cursorIndexOfContent = CursorUtil.getColumnIndexOrThrow(_cursor, "content");
+          final int _cursorIndexOfErrorText = CursorUtil.getColumnIndexOrThrow(_cursor, "errorText");
+          final int _cursorIndexOfModelId = CursorUtil.getColumnIndexOrThrow(_cursor, "modelId");
+          final int _cursorIndexOfUsageIn = CursorUtil.getColumnIndexOrThrow(_cursor, "usageIn");
+          final int _cursorIndexOfUsageOut = CursorUtil.getColumnIndexOrThrow(_cursor, "usageOut");
+          final int _cursorIndexOfStoppedManually = CursorUtil.getColumnIndexOrThrow(_cursor, "stoppedManually");
+          final int _cursorIndexOfCreatedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "createdAt");
+          final List<MessageEntity> _result = new ArrayList<MessageEntity>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final MessageEntity _item;
+            final String _tmpId;
+            _tmpId = _cursor.getString(_cursorIndexOfId);
+            final String _tmpChatId;
+            _tmpChatId = _cursor.getString(_cursorIndexOfChatId);
+            final String _tmpRole;
+            _tmpRole = _cursor.getString(_cursorIndexOfRole);
+            final String _tmpContent;
+            _tmpContent = _cursor.getString(_cursorIndexOfContent);
+            final String _tmpErrorText;
+            if (_cursor.isNull(_cursorIndexOfErrorText)) {
+              _tmpErrorText = null;
+            } else {
+              _tmpErrorText = _cursor.getString(_cursorIndexOfErrorText);
+            }
+            final String _tmpModelId;
+            if (_cursor.isNull(_cursorIndexOfModelId)) {
+              _tmpModelId = null;
+            } else {
+              _tmpModelId = _cursor.getString(_cursorIndexOfModelId);
+            }
+            final Integer _tmpUsageIn;
+            if (_cursor.isNull(_cursorIndexOfUsageIn)) {
+              _tmpUsageIn = null;
+            } else {
+              _tmpUsageIn = _cursor.getInt(_cursorIndexOfUsageIn);
+            }
+            final Integer _tmpUsageOut;
+            if (_cursor.isNull(_cursorIndexOfUsageOut)) {
+              _tmpUsageOut = null;
+            } else {
+              _tmpUsageOut = _cursor.getInt(_cursorIndexOfUsageOut);
+            }
+            final boolean _tmpStoppedManually;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfStoppedManually);
+            _tmpStoppedManually = _tmp != 0;
+            final long _tmpCreatedAt;
+            _tmpCreatedAt = _cursor.getLong(_cursorIndexOfCreatedAt);
+            _item = new MessageEntity(_tmpId,_tmpChatId,_tmpRole,_tmpContent,_tmpErrorText,_tmpModelId,_tmpUsageIn,_tmpUsageOut,_tmpStoppedManually,_tmpCreatedAt);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
   }
 
   @Override
