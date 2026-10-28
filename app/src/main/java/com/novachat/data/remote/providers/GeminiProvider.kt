@@ -43,7 +43,7 @@ class GeminiProvider(
         systemPrompt: String?,
         temperature: Float,
         maxTokens: Int?,
-        onEvent: (ChatEvent) -> Unit
+        onEvent: suspend (ChatEvent) -> Unit
     ) {
         if (profile.apiKey.isBlank()) {
             onEvent(ChatEvent.Failed("API key is missing — add it in Settings."))
@@ -95,7 +95,7 @@ class GeminiProvider(
                     val msg = err["message"]?.jsonPrimitive?.contentOrNull
                         ?: data.take(300)
                     onEvent(ChatEvent.Failed("Provider error: $msg"))
-                    return
+                    return@collect
                 }
                 val parts = root["candidates"]?.jsonArray
                     ?.firstOrNull()?.jsonObject

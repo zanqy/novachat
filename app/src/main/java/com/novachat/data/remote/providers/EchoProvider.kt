@@ -22,7 +22,7 @@ class EchoProvider : ChatProvider {
         systemPrompt: String?,
         temperature: Float,
         maxTokens: Int?,
-        onEvent: (ChatEvent) -> Unit
+        onEvent: suspend (ChatEvent) -> Unit
     ) {
         val lastUser = messages.lastOrNull { it.role.name == "USER" }?.content
         val answer = buildString {

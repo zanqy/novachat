@@ -41,7 +41,7 @@ class OpenAICompatibleProvider(
         systemPrompt: String?,
         temperature: Float,
         maxTokens: Int?,
-        onEvent: (ChatEvent) -> Unit
+        onEvent: suspend (ChatEvent) -> Unit
     ) {
         if (profile.baseUrl.isBlank()) {
             onEvent(ChatEvent.Failed("Base URL is empty — set it in Settings."))
@@ -98,7 +98,7 @@ class OpenAICompatibleProvider(
                     val msg = err["message"]?.jsonPrimitive?.contentOrNull
                         ?: err.toString().take(300)
                     onEvent(ChatEvent.Failed("Provider error: $msg"))
-                    return
+                    return@collect
                 }
                 val choice = root["choices"]?.jsonArray?.firstOrNull()?.jsonObject
                 val delta = choice?.get("delta")?.jsonObject

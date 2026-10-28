@@ -5,11 +5,11 @@ import android.content.Context
 import androidx.room.Room
 import com.novachat.data.chat.RoomChatRepository
 import com.novachat.data.db.NovaChatDb
-import com.novachat.data.providers.AnthropicProvider
-import com.novachat.data.providers.EchoProvider
-import com.novachat.data.providers.GeminiProvider
-import com.novachat.data.providers.ModelCatalog
-import com.novachat.data.providers.OpenAICompatibleProvider
+import com.novachat.data.remote.providers.AnthropicProvider
+import com.novachat.data.remote.providers.EchoProvider
+import com.novachat.data.remote.providers.GeminiProvider
+import com.novachat.data.remote.providers.ModelCatalog
+import com.novachat.data.remote.providers.OpenAICompatibleProvider
 import com.novachat.data.providers.RoomProviderRepository
 import com.novachat.data.remote.sse.SseClient
 import com.novachat.data.settings.SettingsStore

@@ -13,7 +13,7 @@ interface ChatProvider {
         systemPrompt: String?,
         temperature: Float,
         maxTokens: Int?,
-        onEvent: (ChatEvent) -> Unit
+        onEvent: suspend (ChatEvent) -> Unit
     )
 
     suspend fun listModels(profile: ProviderProfile): List<ModelInfo>

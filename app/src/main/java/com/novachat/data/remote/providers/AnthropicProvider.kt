@@ -41,7 +41,7 @@ class AnthropicProvider(
         systemPrompt: String?,
         temperature: Float,
         maxTokens: Int?,
-        onEvent: (ChatEvent) -> Unit
+        onEvent: suspend (ChatEvent) -> Unit
     ) {
         if (profile.apiKey.isBlank()) {
             onEvent(ChatEvent.Failed("API key is missing — add it in Settings."))
