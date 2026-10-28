@@ -120,7 +120,7 @@ class RoomChatRepository(
         errorText: String?,
         stoppedManually: Boolean
     ) {
-        messageDao.finalize(id, content, usageIn, usageOut, errorText, stoppedManually)
+        messageDao.finalizeMessage(id, content, usageIn, usageOut, errorText, stoppedManually)
     }
 
     override suspend fun counts(): Pair<Int, Int> =

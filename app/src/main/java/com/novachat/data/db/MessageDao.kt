@@ -29,7 +29,7 @@ interface MessageDao {
            usageOut = :usageOut, errorText = :errorText,
            stoppedManually = :stoppedManually WHERE id = :id"""
     )
-    suspend fun finalize(
+    suspend fun finalizeMessage(
         id: String,
         content: String,
         usageIn: Int?,
