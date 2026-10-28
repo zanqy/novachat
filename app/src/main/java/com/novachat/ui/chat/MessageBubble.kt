@@ -14,15 +14,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -36,11 +46,15 @@ fun MessageBubble(
     message: ChatMessage,
     draft: String?,
     isStreaming: Boolean,
+    showRegenerate: Boolean,
     onCopy: (String) -> Unit,
+    onEdit: () -> Unit,
     onRetry: () -> Unit,
+    onRegenerate: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (message.role == Role.USER) {
+        var menuOpen by remember { mutableStateOf(false) }
         Row(
             modifier = modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
@@ -52,7 +66,7 @@ fun MessageBubble(
                     .padding(start = 48.dp)
                     .combinedClickable(
                         onClick = {},
-                        onLongClick = { onCopy(message.content) }
+                        onLongClick = { menuOpen = true }
                     )
             ) {
                 Text(
@@ -60,6 +74,22 @@ fun MessageBubble(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                )
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text("Copy") },
+                    onClick = {
+                        menuOpen = false
+                        onCopy(message.content)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Edit & resend") },
+                    onClick = {
+                        menuOpen = false
+                        onEdit()
+                    }
                 )
             }
         }
@@ -81,17 +111,34 @@ fun MessageBubble(
             if (message.errorText != null) {
                 Spacer(Modifier.height(6.dp))
                 ErrorCard(message.errorText, onRetry)
-            } else if (isStreaming && display.isBlank()) {
-                // caret shown above; nothing else
             }
             val meta = buildMeta(message)
-            if (meta != null) {
-                Text(
-                    text = meta,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+            if (meta != null || showRegenerate) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (meta != null) {
+                        Text(
+                            text = meta,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
+                    if (showRegenerate) {
+                        IconButton(
+                            onClick = onRegenerate,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Refresh,
+                                contentDescription = "Regenerate reply",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }

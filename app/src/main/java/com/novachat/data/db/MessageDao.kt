@@ -18,6 +18,15 @@ interface MessageDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(message: MessageEntity)
 
+    @Query("SELECT * FROM messages WHERE chatId = :chatId ORDER BY createdAt ASC")
+    suspend fun getOnce(chatId: String): List<MessageEntity>
+
+    @Query("DELETE FROM messages WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM messages WHERE chatId = :chatId AND createdAt > :timestamp")
+    suspend fun deleteAfter(chatId: String, timestamp: Long)
+
     @Query("SELECT * FROM messages WHERE id = :id")
     suspend fun getById(id: String): MessageEntity?
 

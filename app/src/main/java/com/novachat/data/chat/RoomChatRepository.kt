@@ -108,6 +108,17 @@ class RoomChatRepository(
     override suspend fun getMessage(id: String): ChatMessage? =
         messageDao.getById(id)?.toDomain()
 
+    override suspend fun getMessagesOnce(chatId: String): List<ChatMessage> =
+        messageDao.getOnce(chatId).map { it.toDomain() }
+
+    override suspend fun deleteMessage(id: String) {
+        messageDao.deleteById(id)
+    }
+
+    override suspend fun deleteMessagesAfter(chatId: String, timestamp: Long) {
+        messageDao.deleteAfter(chatId, timestamp)
+    }
+
     override suspend fun updateMessageContent(id: String, content: String) {
         messageDao.updateContent(id, content)
     }

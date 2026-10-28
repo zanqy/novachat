@@ -77,15 +77,11 @@ class ChatViewModel(
             return
         }
         viewModelScope.launch {
-            val wasEmpty = messages.value.isEmpty()
-            val user = chats.addMessage(chatId, Role.USER, text, chat.modelId)
-            if (wasEmpty && chat.title == "New chat") {
-                chats.renameChat(chatId, text.take(48))
-            }
+            chats.addMessage(chatId, Role.USER, text, chat.modelId)
             val assistant = chats.addMessage(chatId, Role.ASSISTANT, "", chat.modelId)
             val history = messages.value
             controller.start {
-                runGeneration(assistant.id, history, profile, user)
+                runGeneration(assistant.id, history, profile)
             }
         }
     }
@@ -114,7 +110,66 @@ class ChatViewModel(
                 if (history.any { m -> m.id == it.id }) emptyList() else listOf(it)
             }
             controller.start {
-                runGeneration(assistant.id, fullHistory, profile, lastUser)
+                runGeneration(assistant.id, fullHistory, profile)
+            }
+        }
+    }
+
+    /** Deletes the last assistant reply and re-streams it from the same history. */
+    fun regenerate() {
+        if (_streaming.value) return
+        val chat = chat.value ?: return
+        val profile = activeProfile() ?: return
+        if (!canSend()) {
+            _notice.tryEmit(missingKeyHint() ?: "Cannot send right now")
+            return
+        }
+        viewModelScope.launch {
+            val current = chats.getMessagesOnce(chatId)
+            val lastAssistant = current.lastOrNull { it.role == Role.ASSISTANT }
+            if (lastAssistant == null) {
+                _notice.tryEmit("Nothing to regenerate")
+                return@launch
+            }
+            val history = current.filter {
+                it.createdAt < lastAssistant.createdAt &&
+                    it.errorText == null && it.content.isNotBlank()
+            }
+            if (history.none { it.role == Role.USER }) {
+                _notice.tryEmit("Nothing to regenerate from")
+                return@launch
+            }
+            chats.deleteMessage(lastAssistant.id)
+            val assistant = chats.addMessage(chatId, Role.ASSISTANT, "", chat.modelId)
+            controller.start {
+                runGeneration(assistant.id, history, profile)
+            }
+        }
+    }
+
+    /**
+     * Replaces a user message, deletes everything after it, and re-sends.
+     */
+    fun editAndResend(targetId: String, newText: String) {
+        val text = newText.trim()
+        if (text.isEmpty() || _streaming.value) return
+        val chat = chat.value ?: return
+        val profile = activeProfile() ?: return
+        if (!canSend()) {
+            _notice.tryEmit(missingKeyHint() ?: "Cannot send right now")
+            return
+        }
+        viewModelScope.launch {
+            val target = chats.getMessage(targetId) ?: return@launch
+            if (target.role != Role.USER || target.chatId != chatId) return@launch
+            chats.updateMessageContent(targetId, text)
+            chats.deleteMessagesAfter(chatId, target.createdAt)
+            val assistant = chats.addMessage(chatId, Role.ASSISTANT, "", chat.modelId)
+            val history = chats.getMessagesOnce(chatId).filter {
+                it.errorText == null && it.content.isNotBlank()
+            }
+            controller.start {
+                runGeneration(assistant.id, history, profile)
             }
         }
     }
@@ -167,6 +222,18 @@ class ChatViewModel(
         viewModelScope.launch { chats.updateSystemPrompt(chatId, prompt) }
     }
 
+    /**
+     * After the first assistant reply, title an untitled chat from the first
+     * user message. No extra LLM call.
+     */
+    private suspend fun maybeAutoTitle(history: List<ChatMessage>) {
+        val current = chat.value ?: return
+        if (current.title != "New chat" && current.title.isNotBlank()) return
+        val firstUser = history.firstOrNull { it.role == Role.USER }
+            ?.content?.trim()?.takeIf { it.isNotEmpty() } ?: return
+        chats.renameChat(chatId, firstUser.take(40))
+    }
+
     override fun onCleared() {
         // Leaving the screen cancels the stream; the CancellationException
         // path in runGeneration persists the partial text.
@@ -177,8 +244,7 @@ class ChatViewModel(
     private suspend fun runGeneration(
         assistantId: String,
         history: List<ChatMessage>,
-        profile: ProviderProfile,
-        @Suppress("UNUSED_PARAMETER") trigger: ChatMessage
+        profile: ProviderProfile
     ) {
         _streaming.value = true
         val chat = chat.value ?: run { _streaming.value = false; return }
@@ -218,6 +284,7 @@ class ChatViewModel(
                 }
             }
             chats.touchChat(chatId, System.currentTimeMillis())
+            maybeAutoTitle(history)
         } catch (e: CancellationException) {
             chats.finalizeAssistantMessage(
                 assistantId, sb.toString(), null, null, null, true

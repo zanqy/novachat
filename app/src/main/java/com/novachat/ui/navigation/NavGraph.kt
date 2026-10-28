@@ -16,7 +16,9 @@ object Routes {
     const val LIST = "chatlist"
     const val SETTINGS = "settings"
     const val CHAT = "chat/{chatId}"
+    const val SYSPROMPT = "sysprompt/{chatId}"
     fun chat(chatId: String) = "chat/$chatId"
+    fun sysPrompt(chatId: String) = "sysprompt/$chatId"
 }
 
 @Composable
@@ -37,6 +39,17 @@ fun NavGraph(
         ) { entry ->
             val chatId = entry.arguments?.getString("chatId").orEmpty()
             ChatScreen(
+                container = container,
+                navController = navController,
+                chatId = chatId
+            )
+        }
+        composable(
+            Routes.SYSPROMPT,
+            arguments = listOf(navArgument("chatId") { type = NavType.StringType })
+        ) { entry ->
+            val chatId = entry.arguments?.getString("chatId").orEmpty()
+            SystemPromptScreen(
                 container = container,
                 navController = navController,
                 chatId = chatId
